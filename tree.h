@@ -40,6 +40,38 @@ public:
 
     // TODO: Write constructor
     Node(const string &nodeID, const U &value) : id(nodeID), data(value) {}
+
+    bool addNode(const string &parentID, const string &childID, const U &value) {
+        if (parentID == id) {
+            children.push_back(new Node<U>(childID, value));
+            return true;
+        }
+
+        for (Node<U>* child : children) {
+            if (child->addNode(parentID, childID, value)) return true;
+        }
+
+        return false;
+    }
+
+    Node<U>* findNode(const string &id) {
+        if (this->id == id) return this;
+
+        for (Node<U>* child : this->children) {
+            Node<U>* temp = child->findNode(id);
+            if (temp) return temp;
+        }
+
+        return nullptr;
+    }
+
+    ~Node() {
+        for (const Node<U>* child : this->children) {
+            delete child;
+        }
+
+        this->children.clear();
+    }
 };
 
 template <typename T>
@@ -59,15 +91,7 @@ public:
 
     bool addNode(const string &parentID, const string &childID, const T &value) {
         if (!root) return false;
-        if (root->id == parentID) {
-            root->children.push_back(new Node<T>(childID, value));
-            return true;
-        }
-        else {
-            for (Node<T>* child : root->children) {
-                if (child->addNode(parentID, childID, value)) return true;
-            }
-        }
+        if (root->addNode(parentID, childID, value)) return true;
 
         return false;
     }
@@ -76,15 +100,7 @@ public:
 
     Node<T>* findNode(const string &id) {
         if (!root) return nullptr;
-        if (root->id == id) return root;
-        else {
-            for (Node<T>* child : root->children) {
-                Node<T>* temp = child->findNode(id);
-                if (temp) return temp;
-            }
-        }
-
-        return nullptr;
+        return root->findNode(id);
     }
     // TODO: Use DFS or BFS to search tree
 
@@ -103,6 +119,31 @@ public:
         }
     }
     // TODO: Print entire structure in readable form
+
+    void playGame() {
+        if (!root) return;
+
+        queue<Node<T>*> q;
+        q.push(root);
+        while (!q.empty()) {
+            Node<T>* temp = q.front();
+            q.pop();
+            cout << temp->id << ": " << temp->data << endl;
+            string newID;
+            getline(cin, newID);
+
+            for (Node<T>* child : temp->children) {
+                Node<T>* next = child->findNode(newID);
+                if (next) {
+                    q.push(next);
+                }
+                else {
+                    cerr << newID << ": No such node exists" << endl;
+                }
+            }
+        }
+        cout << "Thanks for playing!" << endl;
+    }
 
     ~Tree() {
         delete root;

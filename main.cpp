@@ -35,6 +35,28 @@ struct StoryNodeRaw {
 };
 
 // Step 1. Call OpenAI with curl
+/*
+For Windows, use this function body:
+string runCurlToOpenAI(const string &apiKey) {
+    string command =
+        "curl https://api.openai.com/v1/responses "
+        "-H \"Content-Type: application/json\" "
+        "-H \"Authorization: Bearer " + apiKey + "\" "
+        "-d \"{"
+        "\\\"model\\\": \\\"gpt-4.1-mini\\\","
+        "\\\"input\\\": \\\"Generate a choose-your-own-adventure story as a structured list of nodes. "
+        "Each node must have: NODE_ID, NODE_TEXT, CHILD_IDS as a comma-separated list. "
+        "Limit to 2 nodes. The format must be strictly: "
+        "[NODE_ID] TEXT: ... NEXT: child1, child2, ... "
+        "No extra commentary.\\\""
+        "}\" "
+        "> C:\\PATH_TO_PROJECT_DIRECTORY\\story.txt";
+
+    cout << "Fetching story from OpenAI..." << endl;
+    system(command.c_str());
+    return "C:\\PATH_TO_PROJECT_DIRECTORY\\story.txt";
+}
+*/
 string runCurlToOpenAI(const string &apiKey) {
     string command =
         "curl https://api.openai.com/v1/responses "
@@ -115,12 +137,28 @@ int main() {
     Tree<string> adventureTree;
 
     // TODO: Students, create the root from rawNodes[0]
-    // adventureTree.createRoot(rawNodes[0].id, rawNodes[0].text);
+    adventureTree.createRoot(rawNodes[0].id, rawNodes[0].text);
 
     // TODO: Students, add all remaining nodes
-    // for (int i = 1; i < rawNodes.size(); i++) {
-    //     adventureTree.addNode(...);
-    // }
+    for (int i = 1; i < rawNodes.size(); i++) {
+        string parentID = "-1";
+        int j = 0;
+        while (j < i && parentID == "-1") {
+            const size_t childIDpos = rawNodes[j].text.find("NEXT:");
+            const string childIDs = rawNodes[j].text.substr(childIDpos + 5);
+
+            if (childIDs.find(to_string(j)) != -1) {
+                parentID = to_string(j);
+            }
+        }
+
+        // Prevent incoherent AI hallucinations where it creates unreachable story nodes
+        if (parentID == "-1") {
+            cerr << "Created story is invalid." << endl;
+        }
+
+        adventureTree.addNode(parentID, rawNodes[i].id, rawNodes[i].text);
+    }
 
     // TODO: Students, implement a method in Tree<T> called playGame()
     // This method should:
@@ -138,6 +176,6 @@ int main() {
     cout << "Implement the Tree class to enable traversal and printing." << endl;
 
     // TODO: Once implemented, uncomment to allow full gameplay.
-    // adventureTree.playGame();
+    adventureTree.playGame();
     return 0;
 }
